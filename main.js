@@ -130,9 +130,10 @@ define(function (require, exports, module) {
                 minheight: $("#ccext-extminheight").val(),
                 maxwidth: $("#ccext-extmaxwidth").val(),
                 maxheight: $("#ccext-extmaxheight").val(),
-                extname : $("#ccext-extname").val()
+                extname : $("#ccext-extname").val(),
+                authname : $("#ccext-authname").val()
             };
-                        
+
             createExtension(data);
         });
                 

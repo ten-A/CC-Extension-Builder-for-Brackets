@@ -2,6 +2,8 @@
 
 <ExtensionManifest Version="4.0" ExtensionBundleId="${extid}" ExtensionBundleVersion="1.0.0"
 		ExtensionBundleName="${extname}" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<Author><![CDATA[${authname}]]></Author>
+	<Abstract><![CDATA[]]></Abstract>
 	<ExtensionList>
 		<Extension Id="${extid}" Version="1.0" />
 	</ExtensionList>
