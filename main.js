@@ -14,48 +14,144 @@ define(function (require, exports, module) {
     var Menus               = brackets.getModule("command/Menus");
     var ProjectManager      = brackets.getModule("project/ProjectManager");
     var FileUtils           = brackets.getModule("file/FileUtils");
-    var NativeFileSystem    = brackets.getModule("file/NativeFileSystem").NativeFileSystem;
+    var FileSystem          = brackets.getModule("filesystem/FileSystem");
     var Dialogs             = brackets.getModule("widgets/Dialogs");
     var PanelTemplate       = require("text!panel.html");
     var ExtensionUtils      = brackets.getModule("utils/ExtensionUtils");
     var AppInit             = brackets.getModule("utils/AppInit");
     var NodeConnection      = brackets.getModule("utils/NodeConnection");
-
-
-    var NEW_CCEXT_COMMAND_ID  = "CCExtBuilder.newExt";
+    
+    
+    var CCEXT_MENU_ID  = "CCExtBuilder.menu";
+    var CCEXT_MENU_NAME = "CC Extension Builder";
+    var NEW_CCEXT_CMDID  = "CCExtBuilder.newExt";
     var NEW_CCEXT_MENU_NAME   = "New Creative Cloud Extension";
-            
-    var TEMPLATE_FOLDER_NAME = "/ccext-template/";
+    var DEBUGMODE_ON_CMDID  = "CCExtBuilder.setDebugMode";
+    var DEBUGMODE_ON_CMDNAME   = "Enable Debug Mode";
+    
+    var SDK_FOLDER_NAME = "/CC-EXT-SDK/";
     var NODE_DOMAIN_LOCATION = "node/CCExtDomain";
-    var SUCCESS_MSG = "Extension successfully created! You may now launch it from its Creative Cloud application(s).";
-    var HOSTS = [
-            '<Host Name="PHXS" Version="[14.0,14.9]" /><Host Name="PHSP" Version="[14.0,14.9]" />',
-            '<Host Name="ILST" Version="[17.0,17.9]" />',
-            '<Host Name="PPRO" Version="[7.0,7.9]" />',
-            '<Host Name="PRLD" Version="[2.0,2.9]" />',
-            '<Host Name="IDSN" Version="[9.1,10.0]" />',
-            //'<Host Name="FLPR" Version="[13.1,14.0]" />'
-        ];
-        
-                
-    var $panel;
-    var userHomeDir;
-    var nodeConnection;
+    var SUCCESS_MSG = "Extension successfully created. Please Edit the manifest file according to your needs and launch the corresponding CC app.";
 
     
-                  
+    var HOSTS = [
+            '<Host Name="PHXS" Version="[18.0,2100.0]" /><Host Name="PHSP" Version="[18.0,2100.0]" />',
+            '<Host Name="ILST" Version="[21.0,2100.0]" />',
+            '<Host Name="PPRO" Version="[11.0,2100.0]" />',
+            '<Host Name="PRLD" Version="[6.0,2100.0]" />',
+            '<Host Name="IDSN" Version="[12.0,2100.0]" />',
+            '<Host Name="FLPR" Version="[16.0,2100.0]" />',
+            '<Host Name="AEFT" Version="[14.0,2100.0]" />'
+        ];    
+                
+    var isWin = true;
+    var userHomeDir;
+    var nodeConnection;
+    var moduleFolder;
+    var sdkFolder;
+    
+        
+    function enableDebugging(){
+        
+        var cmd = "";
+        if(isWin) {
+            cmd = '"'+sdkFolder.fullPath + 'setdebugmode.bat"';
+        } else {
+            cmd = "'"+sdkFolder.fullPath + "setdebugmode.sh'" ;
+        } 
+                
+        console.log("Brackets cmd:"+cmd);
+        
+        var exePromise = nodeConnection.domains.ccext.execmd(cmd);
+        
+        exePromise.fail(function (err) {
+            console.error("[brackets-ccext-node] failed to run ccext.execmd", err);
+        });
+        
+        exePromise.done(function (stdout) {            
+            alert("Debug Mode ON");
+        });    
+    }
+    
+    
+    function createExtension(data) {
+                
+        var cmd = "";
+        if(isWin) {
+            cmd = '"'+sdkFolder.fullPath + "createext.bat" + '" default ' + data.extid + "'";
+        } else {
+            cmd = "'"+sdkFolder.fullPath + "createext.sh"  + "' default " + data.extid;
+        } 
+                
+        console.log("Brackets cmd:"+cmd);
+        
+        var exePromise = nodeConnection.domains.ccext.execmd(cmd);
+        
+        exePromise.fail(function (err) {
+            console.error("[brackets-ccext-node] failed to run ccext.execmd", err);
+        });
+        
+        exePromise.done(function (stdout) {
+            
+            var nstdout = stdout.replace(/[\r\n]/g, "");// remove line breaks
+            var path = nstdout.replace(/\\/g,"/");// normalize windows paths       
+            
+            
+            // Modify manifest file             
+            var manifestFile =  new FileSystem.getFileForPath(path + "/CSXS/manifest.xml");
+            processTemplateFile(manifestFile, data);
+
+            // Modify debug file             
+            var debugFile =  new FileSystem.getFileForPath(path + "/.debug");
+            processTemplateFile(debugFile, data);
+          
+            
+            // Open project and document
+            ProjectManager.openProject(path).done(
+                function () {
+                    DocumentManager.getDocumentForPath(path + "/CSXS/manifest.xml").done(
+                        function (doc) {
+                            DocumentManager.setCurrentDocument(doc);
+                            alert(SUCCESS_MSG);
+                        }
+                    );
+                }
+            );
+                                
+        });
+    }
+    
+    
     function _processTemplate(templateString, data) {
         
         var str = templateString;
-        var z;
-        for (z in data) {
-            if (data.hasOwnProperty(z)) {
-                var reg = new RegExp("\\${" + z + "}", "g");
-                str = str.replace(reg, data[z]);
-            }
-        }
+        var reg1 = new RegExp("com.example.ext", "g");
+        str = str.replace(reg1, data.extid);
+        var reg2 = new RegExp("Extension-Name", "g");
+        str = str.replace(reg2, data.extname);
         
+<<<<<<< HEAD
+        $("#ccextSubmit").on("click", function (e) {
+            
+            var data = {
+                extid : $("#ccext-id").val(),
+                host: HOSTS[parseInt($("#ccext-host").val(), 10)],
+                width: $("#ccext-extwidth").val(),
+                height: $("#ccext-extheight").val(),
+                minwidth: $("#ccext-extminwidth").val(),
+                minheight: $("#ccext-extminheight").val(),
+                maxwidth: $("#ccext-extmaxwidth").val(),
+                maxheight: $("#ccext-extmaxheight").val(),
+                extname : $("#ccext-extname").val(),
+                authname : $("#ccext-authname").val()
+            };
+
+            createExtension(data);
+        });
+                
+=======
         return str;
+>>>>>>> origin/master
     }
         
     
@@ -76,75 +172,7 @@ define(function (require, exports, module) {
                 console.log(err);
             });
     }
-    
 
-    function createExtension(data) {
-        
-        var moduleFolder = FileUtils.getNativeModuleDirectoryPath(module);
-        var templateFolder = new NativeFileSystem.DirectoryEntry(moduleFolder + TEMPLATE_FOLDER_NAME);
-        
-        var copyPromise = nodeConnection.domains.ccext.copyTemplate(templateFolder.fullPath, data.extid);
-        
-        copyPromise.fail(function (err) {
-            console.error("[brackets-ccext-node] failed to run ccext.copyTemplate", err);
-        });
-        
-        copyPromise.done(function (path) {
-                            
-            // Modify manifest file             
-            var manifestFile =  new NativeFileSystem.FileEntry(path + "/CSXS/manifest.xml");
-            processTemplateFile(manifestFile, data);
-
-            // Open project and document
-            ProjectManager.openProject(path).done(
-                function () {
-                    DocumentManager.getDocumentForPath(path + "/index.html").done(
-                        function (doc) {
-                            DocumentManager.setCurrentDocument(doc);
-                            alert(SUCCESS_MSG);
-                        }
-                    );
-                }
-            );
-                                
-        });
-    }
-
-
-
-    function createPanel() {
-        
-        ExtensionUtils.loadStyleSheet(module, "panel.css");
-        
-        Dialogs.showModalDialogUsingTemplate(PanelTemplate);
-                
-        
-        $("#ccextSubmit").on("click", function (e) {
-            
-            var data = {
-                extid : $("#ccext-id").val(),
-                host: HOSTS[parseInt($("#ccext-host").val(), 10)],
-                width: $("#ccext-extwidth").val(),
-                height: $("#ccext-extheight").val(),
-                minwidth: $("#ccext-extminwidth").val(),
-                minheight: $("#ccext-extminheight").val(),
-                maxwidth: $("#ccext-extmaxwidth").val(),
-                maxheight: $("#ccext-extmaxheight").val(),
-                extname : $("#ccext-extname").val(),
-                authname : $("#ccext-authname").val()
-            };
-
-            createExtension(data);
-        });
-                
-    }
-    
-
-
-    function onMenuCreateNewCCExt() {
-        createPanel();
-    }
-    
 
         
     function initNodeDomain() {
@@ -183,15 +211,74 @@ define(function (require, exports, module) {
         });
             
     }
+    
+    
+    function createPanel() {
+        
+        ExtensionUtils.loadStyleSheet(module, "panel.css");
+        
+        Dialogs.showModalDialogUsingTemplate(PanelTemplate);
+                
+        
+        $("#ccextSubmit").on("click", function (e) {
+            
+            var data = {
+                extid : $("#ccext-id").val(),
+                extname : $("#ccext-extname").val()
+                /*
+                host: HOSTS[parseInt($("#ccext-host").val(), 10)],
+                width: $("#ccext-extwidth").val(),
+                height: $("#ccext-extheight").val(),
+                minwidth: $("#ccext-extminwidth").val(),
+                minheight: $("#ccext-extminheight").val(),
+                maxwidth: $("#ccext-extmaxwidth").val(),
+                maxheight: $("#ccext-extmaxheight").val()
+                */
+            };
+                        
+            createExtension(data);
+        });
+                
+    }
+    
             
             
     AppInit.appReady(function () {
+        
+        isWin = (brackets.platform!="mac");
+        
+        moduleFolder = FileUtils.getNativeModuleDirectoryPath(module);
+        sdkFolder = new FileSystem.getDirectoryForPath(moduleFolder + SDK_FOLDER_NAME);        
+        
         initNodeCnx();
+        
     });
-
     
-    CommandManager.register(NEW_CCEXT_MENU_NAME, NEW_CCEXT_COMMAND_ID, onMenuCreateNewCCExt);
-    var menu = Menus.getMenu(Menus.AppMenuBar.FILE_MENU);
-    menu.addMenuItem(NEW_CCEXT_COMMAND_ID);
-    menu.addMenuDivider(Menus.BEFORE, NEW_CCEXT_COMMAND_ID);
+
+    function setupMenu(){
+        
+        CommandManager.register(DEBUGMODE_ON_CMDNAME, DEBUGMODE_ON_CMDID, onMenuDebugModeOn);
+        function onMenuDebugModeOn(){
+            enableDebugging();
+        }
+
+        CommandManager.register(NEW_CCEXT_MENU_NAME, NEW_CCEXT_CMDID, onMenuCreateNewCCExt);    
+        function onMenuCreateNewCCExt(){
+            createPanel();
+        }    
+
+
+        var ccextMenu =  Menus.getMenu(CCEXT_MENU_ID);
+        if (!ccextMenu) {
+            ccextMenu = Menus.addMenu(CCEXT_MENU_NAME, CCEXT_MENU_ID, Menus.LAST);
+        }
+
+        ccextMenu.addMenuItem(DEBUGMODE_ON_CMDID);
+        ccextMenu.addMenuItem(NEW_CCEXT_CMDID);    
+        
+        //ccextMenu.addMenuDivider(Menus.BEFORE, NEW_CCEXT_COMMAND_ID);
+
+    }
+    setupMenu();
+    
 });

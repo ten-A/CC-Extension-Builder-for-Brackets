@@ -14,10 +14,10 @@ maxerr: 50, node: true */
     
     
     function log(pMsg) {
-        /*
+        
         var sep = (isMac) ? "/" : "\\";
         fs.appendFile(__dirname + sep + "nodelog.txt", pMsg + "\r\n");
-        */
+        
         //console.log(pMsg);
     }
 
@@ -36,19 +36,15 @@ maxerr: 50, node: true */
         //result = result.substr(0, result.length - 1);
         return result;
     }
-        
+    
+    
     /**
      * @private
-     * Handler function for the ccext.copyTemplate command.
+     * Handler function for the ccext.execmd command.
      * @return true
      */
-    function cmdCopyTemplate(source, extid, cb) {
-        
-        var cmd = "'" + __dirname + "/scripts/deployext.sh' '" + source + "' " + extid;
-        if (!isMac) {
-            cmd = '' + __dirname + '\\scripts\\deployext.bat ' + toWinPath(source) + ' ' + extid;
-        }
-        
+    function cmdExec(cmd, cb) {
+                        
         log("Exec:" + cmd);
         
         exec(cmd, function (error, stdout, stderr) {
@@ -56,72 +52,33 @@ maxerr: 50, node: true */
                 log(error);
                 cb(error, null);
             } else {
-                stdout = stdout.replace(/[\r\n]/g, "");//remove linebreaks
-                log("stdout:" + stdout + "--");
+                log("stdout:" + stdout);
                 cb(null, stdout);
             }
         });
-    }
+    }        
     
-    
-    /**
-    * @private
-    * Update the preferences to allow direct install of extensions
-    */
-    
-    function setDebugMode() {
-
-        var cmd = "'" + __dirname + "/scripts/setdebugmode.sh'";
-        if (!isMac) {
-            cmd = '' + __dirname + '\\scripts\\setdebugmode.bat';
-        }
-        
-        log(cmd);
-        
-        exec(cmd, function (error, stdout, stderr) {
-            if (error !== null) {
-                log(error);
-            }
-        });
-        
-        return true;
-    }
-
+ 
     /**
     * @private
     * Give execution rights to scripts
     */
     
     function setExecPermissions() {
-
-        var cmd1 = "chmod 755 '" + __dirname + "/scripts/setdebugmode.sh'";
+        
+        var cmd1 = "chmod 755 '" + __dirname + "/../CC-EXT-SDK/setdebugmode.sh'";
+        log("Exec:" + cmd1);       
+        exec(cmd1, function (error, stdout, stderr) {if (error !== null) {log(error);}});        
+        
+        var cmd2 = "chmod 755 '" + __dirname + "/../CC-EXT-SDK/createext.sh'";
+        /*
         if (!isMac) {
-            cmd1 = 'cacls ' + __dirname + '\\scripts\\setdebugmode.bat /e /g everyone:f';
+            cmd2 = 'cacls ' + __dirname + '\\CC-EXT-SDK\\createext.bat /e /g everyone:f';
         }
-        
-        log("Exec:" + cmd1);
-        
-        exec(cmd1, function (error, stdout, stderr) {
-            if (error !== null) {
-                log(error);
-            } else {
-                setDebugMode();
-            }
-        });
-        
-        var cmd2 = "chmod 755 '" + __dirname + "/scripts/deployext.sh'";
-        if (!isMac) {
-            cmd2 = 'cacls ' + __dirname + '\\scripts\\deployext.bat /e /g everyone:f';
-        }
-        
+        */
         log("Exec:" + cmd2);
         
-        exec(cmd2, function (error, stdout, stderr) {
-            if (error !== null) {
-                log(error);
-            }
-        });
-        
+        exec(cmd2, function (error, stdout, stderr) {if (error !== null) {log(error);}});        
         
         return true;
     }
@@ -134,7 +91,7 @@ maxerr: 50, node: true */
      */
     function cmdInitialize() {
         
-        setExecPermissions();
+        //setExecPermissions();
         var home = (process.env.HOME || process.env.USERPROFILE);
         return home;
     }
@@ -158,27 +115,22 @@ maxerr: 50, node: true */
                         
         DomainManager.registerCommand(
             "ccext",       // domain name
-            "copyTemplate",    // command name
-            cmdCopyTemplate,   // command handler function
+            "execmd",    // command name
+            cmdExec,   // command handler function
             true,          // this command is synchronous
-            "Copies the extension template to the appropriate location",
+            "Executes arbitrary command",
             [
                 {
-                    name: "source",
+                    name: "cmd",
                     type: "String",
-                    description: "source folder"
-                },
-                {
-                    name: "extid",
-                    type: "String",
-                    description: "extension id"
+                    description: "command to be executed"
                 }
             ],// parameters
             [{name: "success",
                 type: "String",
                 description: "success of file operation"}]
-        );
-        
+        );   
+
         DomainManager.registerCommand(
             "ccext",       // domain name
             "initialize",    // command name
@@ -190,7 +142,7 @@ maxerr: 50, node: true */
                 type: "String",
                 description: "user home directory"}]
         );
-                
+        setExecPermissions();
         
     }
         
