@@ -48,34 +48,9 @@ define(function (require, exports, module) {
     var userHomeDir;
     var nodeConnection;
     var moduleFolder;
-    var sdkFolder;
+    var sdkFolder; 
     
-        
-    function enableDebugging(){
-        
-        var cmd = "";
-        if(isWin) {
-            cmd = '"'+sdkFolder.fullPath + 'setdebugmode.bat"';
-        } else {
-            cmd = "'"+sdkFolder.fullPath + "setdebugmode.sh'" ;
-        } 
-                
-        console.log("Brackets cmd:"+cmd);
-        
-        var exePromise = nodeConnection.domains.ccext.execmd(cmd);
-        
-        exePromise.fail(function (err) {
-            console.error("[brackets-ccext-node] failed to run ccext.execmd", err);
-        });
-        
-        exePromise.done(function (stdout) {            
-            alert("Debug Mode ON");
-        });    
-    }
-    
-    
-    function createExtension(data) {
-                
+    function createExtension(data) {   
         var cmd = "";
         if(isWin) {
             cmd = '"'+sdkFolder.fullPath + "createext.bat" + '" default ' + data.extid + "'";
@@ -123,7 +98,6 @@ define(function (require, exports, module) {
     
     
     function _processTemplate(templateString, data) {
-        
         var str = templateString;
         var reg1 = new RegExp("com.example.ext", "g");
         str = str.replace(reg1, data.extid);
@@ -157,9 +131,7 @@ define(function (require, exports, module) {
     
     
     function processTemplateFile(srcFile, data) {
-        
         var srcTxt = "";
-        
         FileUtils.readAsText(srcFile)
             .done(function (rawText, readTimestamp) {
                 var newText = _processTemplate(rawText, data);
@@ -175,8 +147,7 @@ define(function (require, exports, module) {
 
 
         
-    function initNodeDomain() {
-                    
+    function initNodeDomain() {             
         var promise = nodeConnection.domains.ccext.initialize();
         promise.fail(function (err) {
             console.error("[brackets-ccext-node] failed to run ccext.initialize", err);
@@ -191,7 +162,6 @@ define(function (require, exports, module) {
                 
             
     function initNodeCnx() {
-        
         nodeConnection = new NodeConnection();
         
         var connectionPromise = nodeConnection.connect(true);
@@ -214,14 +184,10 @@ define(function (require, exports, module) {
     
     
     function createPanel() {
-        
         ExtensionUtils.loadStyleSheet(module, "panel.css");
-        
         Dialogs.showModalDialogUsingTemplate(PanelTemplate);
-                
         
         $("#ccextSubmit").on("click", function (e) {
-            
             var data = {
                 extid : $("#ccext-id").val(),
                 extname : $("#ccext-extname").val()
@@ -244,7 +210,6 @@ define(function (require, exports, module) {
             
             
     AppInit.appReady(function () {
-        
         isWin = (brackets.platform!="mac");
         
         moduleFolder = FileUtils.getNativeModuleDirectoryPath(module);
@@ -256,7 +221,6 @@ define(function (require, exports, module) {
     
 
     function setupMenu(){
-        
         CommandManager.register(DEBUGMODE_ON_CMDNAME, DEBUGMODE_ON_CMDID, onMenuDebugModeOn);
         function onMenuDebugModeOn(){
             enableDebugging();
