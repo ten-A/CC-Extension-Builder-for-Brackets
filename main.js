@@ -35,14 +35,18 @@ define(function (require, exports, module) {
 
     
     var HOSTS = [
-            '<Host Name="PHXS" Version="[18.0,2100.0]" /><Host Name="PHSP" Version="[18.0,2100.0]" />',
-            '<Host Name="ILST" Version="[21.0,2100.0]" />',
-            '<Host Name="PPRO" Version="[11.0,2100.0]" />',
-            '<Host Name="PRLD" Version="[6.0,2100.0]" />',
-            '<Host Name="IDSN" Version="[12.0,2100.0]" />',
-            '<Host Name="FLPR" Version="[16.0,2100.0]" />',
-            '<Host Name="AEFT" Version="[14.0,2100.0]" />'
-        ];    
+            '<Host Name="PHXS" Version="19.0" /><Host Name="PHSP" Version="19.0" />',
+            '<Host Name="ILST" Version="22.0" />',
+            '<Host Name="PPRO" Version="12.0" />',
+            '<Host Name="IDSN" Version="13.0" />',
+            '<Host Name="AEFT" Version="15.0" />',
+            'Host Name="AICY" Version="13.0" />',
+            'Host Name="PPRO" Version="12.0" />',
+            'Host Name="AUDT" Version="11.0" />',
+            '<Host Name="KBRG" Version="8.0" />',
+            'Host Name="PRLD" Version="7.0" />',
+            'Host Name="FLPR" Version="18.0" />'
+    ];    
                 
     var isWin = true;
     var userHomeDir;
